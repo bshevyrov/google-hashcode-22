@@ -1,5 +1,6 @@
 package ua.com.home;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Precision;
 
 import java.io.IOException;
@@ -7,8 +8,64 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class OnePizzaMain {
+
+
+    private static String[] some(List<Client> clients) {
+
+        int count = 0;
+        Collections.sort(clients, Client.Comparators.EFFICIENT.reversed());
+
+        Set<String> likeProduct = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        Set<String> dislikeProduct = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        List<Client> removeList = new ArrayList<>();
+        for (Client client : clients) {
+            //if no dislike add product to product set
+            if (client.getDislikesSize() == 0) {
+                likeProduct.addAll(client.getLikes());
+                removeList.add(client);
+                count++;
+            }
+
+        }
+        //del clients with zero dislikes frome clientsList
+        for (Client client : removeList) {
+            clients.remove(client);
+        }
+//        System.out.println("clients size after remove  ZERO D = " + clients.size());
+
+
+        //compare this client dislike with like product set
+
+        for (Client client : clients) {
+
+            for (String dislike : client.getDislikes()) {
+                boolean dislikeSomeFromProduct = false;
+                for (String s : likeProduct) {
+                    if (StringUtils.equals(dislike, s)) {
+                        dislikeSomeFromProduct = true;
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+                if (dislikeSomeFromProduct) {
+                    break;
+                } else {
+                    count++;
+                    likeProduct.addAll(client.getLikes());
+                    //TODO добавить в дизлайк а потом сравнить
+                }
+            }
+
+        }
+
+        System.out.println("Total clients: "+ count);
+        System.out.println("likeProduct size= " + likeProduct.size());
+        return new String[0];
+    }
 
 
     private static List<Client> fillClientsList(List<String[]> trimString) {
@@ -43,48 +100,11 @@ public class OnePizzaMain {
 //            System.out.println("L:"+client.getLikesSize()+" D:" + client.getDislikesSize() +
 //                    " E:" + client.getEfficient() + " O:" + client.getOpinionSize());
         }
-        System.out.println("Size: " + clients.size());
-        Collections.sort(clients, Client.Comparators.EFFICIENT.reversed());
-        int zero = 0;
-        int effFive = 0;
-        Set<String> likeProduct = new HashSet<>();
-//del clients with zero dislikes
-        //add like ingrifients
-        for (Client client : clients) {
-            if (client.getDislikesSize() == 0) {
-                effFive++;
-                likeProduct.addAll(client.getLikes().stream().toList());
-                //clients.remove(client);
-            }
-            if (client.getEfficient() == 5) {
-                effFive++;
-            }
-        }
-        System.out.println(Arrays.toString(clients.toArray()));
-        System.out.println("ni dis " + zero);
-        System.out.println("hi eff " + effFive);
-
-        //compare this client dislike with like product set
-       inner: for (Client client : clients) {
-            boolean dislikeSomeFromProduct = false;
-            for (String dislike : client.getDislikes()) {
-                for (String s : likeProduct) {
-                    if (dislike.equals(s)) {
-                    break inner;
-                    }
-                }
-                likeProduct.addAll(client.getLikes());
-                clients.remove(client);
-            }
-        }
 
 
         //
-        System.out.println(" product size" + likeProduct.size());
-
         return clients;
     }
-
 
 
     private static List<String[]> fileToSeparateStringList(Path path) throws IOException {
@@ -107,20 +127,35 @@ public class OnePizzaMain {
 
     ///TODOСамые дис
     //TODO caмые лайк
-     // юежать по ефишенту и потом по списку масс дислайк
+    // юежать по ефишенту и потом по списку масс дислайк
 
     public static void main(String[] args) {
-
+        Path a = Paths.get("src/main/resources/a_an_example.in.txt");
+        Path b = Paths.get("src/main/resources/b_basic.in.txt");
+        Path c = Paths.get("src/main/resources/c_coarse.in.txt");
+        Path d = Paths.get("src/main/resources/d_difficult.in.txt");
+        Path e = Paths.get("src/main/resources/e_elaborate.in.txt");
         try {
-            fillClientsList(fileToSeparateStringList(Paths.get("src/main/resources/e_elaborate.in.txt")));
+            List<Client> clientListA = fillClientsList(fileToSeparateStringList(a));
+            List<Client> clientListB = fillClientsList(fileToSeparateStringList(b));
+            List<Client> clientListC = fillClientsList(fileToSeparateStringList(c));
+            List<Client> clientListD = fillClientsList(fileToSeparateStringList(d));
+            List<Client> clientListE = fillClientsList(fileToSeparateStringList(e));
+
+            some(clientListA);
+//            some(clientListB);
+//            some(clientListC);
+//            some(clientListD);
+//            some(clientListE);
+
 
 //       allProductsByCategory.forEach((key,value) -> System.out.println("total: " + value.size()+ " " + key + " : " + value));
 //
 //       Set<String> answer = findNoDislikeProduct(allProductsByCategory);
 //            System.out.println(answer.size());
 //            System.out.println(answer.toString());
-        } catch (IOException e) {
-            System.out.println("NO INPUT FILE " + e.getMessage());
+        } catch (IOException ex) {
+            System.out.println("NO INPUT FILE " + ex.getMessage());
         }
 
     }
