@@ -10,11 +10,42 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class OnePizzaMain {
+   static Map<String,Integer> allLike = new HashMap<>();
+  static   Map<String,Integer> allDislike = new HashMap<>();
 
-    private static void output(Set<String> likeProducts,String taskName) {
-        Path output = Paths.get("src/main/resources/"+taskName+"_output.txt");
+    private static void sort(Set<Client> clientSet) {
+        Set<Client> tempClientSet = new HashSet<>();
+        Set<Client> likeOneOpinionOneSet = new HashSet<>();
+        Map<String, Set<Client>> likeOneOpinionOneClient = sortLikeOneOpinionOne(clientSet);
+        Map<String, Set<Client>> hhh = sortLikeOneOpinionOne(clientSet);
+
+
+    }
+
+    private static Map<String, Set<Client>> sortLikeOneOpinionOne(Set<Client> clientSet) {
+        Set<Client> goodClients = new HashSet<>();
+        Set<Client> otherClients = new HashSet<>();
+        Map<String, Set<Client>> rsl = new HashMap<>();
+
+        for (Client client : clientSet) {
+            if (client.getOpinionSize() == 1 && client.getLikesSize() == 1) {
+                goodClients.add(client);
+            }
+        }
+        otherClients.addAll(clientSet);
+        otherClients.removeAll(goodClients);
+        rsl.put("sorted", goodClients);
+        rsl.put("other", otherClients);
+        return rsl;
+    }
+
+
+    private static void output(Set<String> likeProducts, String taskName) {
+        Path output = Paths.get("src/main/resources/" + taskName + "_output.txt");
 
         int ingredientsSize = likeProducts.size();
         StringBuilder result = new StringBuilder(ingredientsSize + " ");
@@ -38,6 +69,13 @@ public class OnePizzaMain {
         int count = 0;
 //        Collections.sort(clients, Client.Comparators.EFFICIENT.reversed());
         clients.sort(Client.Comparators.OP_SIZE);
+
+        System.out.println(Arrays.toString(clients.toArray()));
+
+        System.out.println(allLike.toString());
+        System.out.println("~~~~");
+        System.out.println(allDislike.toString());
+
 
         Set<String> likeProducts = Collections.newSetFromMap(new ConcurrentHashMap<>());
         Set<String> dislikeProducts = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -127,6 +165,7 @@ public class OnePizzaMain {
             client.setLikesSize(product.length - 1);
             for (int j = 1; j < product.length; j++) {
                 allUniqLikeProducts.add(product[j]);
+                addToLikeStatistic(product[j]);
             }
             client.setLikes(allUniqLikeProducts);
 
@@ -134,6 +173,8 @@ public class OnePizzaMain {
             client.setDislikesSize(product2.length - 1);
             for (int k = 1; k < product2.length; k++) {
                 allUniqDislikeProducts.add(product2[k]);
+                addToDislikeStatistic(product2[k]);
+
             }
             client.setDislikes(allUniqDislikeProducts);
             if (client.getDislikesSize() == 0) {
@@ -147,7 +188,33 @@ public class OnePizzaMain {
 //            System.out.println("L:"+client.getLikesSize()+" D:" + client.getDislikesSize() +
 //                    " E:" + client.getEfficient() + " O:" + client.getOpinionSize());
         }
+        allLike =
+                 allLike.entrySet().stream()
+                        .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).collect(
+                                Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2,
+                                 LinkedHashMap::new));
+        allDislike =
+                allDislike.entrySet().stream()
+                        .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).collect(
+                                Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2,
+                                        LinkedHashMap::new));
         return clients;
+    }
+
+    private static void addToDislikeStatistic(String s) {
+        if(allDislike.containsKey(s)){
+            allDislike.put(s, allDislike.get(s) +1);
+         } else {
+            allDislike.put(s,1);
+    }
+    }
+
+    private static void addToLikeStatistic(String s) {
+        if(allLike.containsKey(s)){
+            allLike.put(s,allLike.get(s).intValue()+1);
+        } else {
+            allLike.put(s,1);
+        }
     }
 
 
@@ -176,13 +243,14 @@ public class OnePizzaMain {
         Path e = Paths.get("src/main/resources/e_elaborate.in.txt");
 
         try {
-            List<Client> clientListA = fillClientsList(fileToSeparateStringList(a));
+           /* List<Client> clientListA = fillClientsList(fileToSeparateStringList(a));
             List<Client> clientListB = fillClientsList(fileToSeparateStringList(b));
             List<Client> clientListC = fillClientsList(fileToSeparateStringList(c));
             List<Client> clientListD = fillClientsList(fileToSeparateStringList(d));
+            */
             List<Client> clientListE = fillClientsList(fileToSeparateStringList(e));
 
-            System.out.println("input a size:" + clientListA.size());
+           /* System.out.println("input a size:" + clientListA.size());
            output( calculateOptimalLikeProduct(clientListA),"a");
             System.out.println("~~~~~~~~~~~~~~");
             System.out.println("input b size:" + clientListB.size());
@@ -192,10 +260,10 @@ public class OnePizzaMain {
             output( calculateOptimalLikeProduct(clientListC),"c");
             System.out.println("~~~~~~~~~~~~~~");
             System.out.println("input d size:" + clientListD.size());
-            output( calculateOptimalLikeProduct(clientListD),"d");
+            output( calculateOptimalLikeProduct(clientListD),"d");*/
             System.out.println("~~~~~~~~~~~~~~");
             System.out.println("input e size:" + clientListE.size());
-            output( calculateOptimalLikeProduct(clientListE),"e");
+            output(calculateOptimalLikeProduct(clientListE), "e");
 
 
 //       allProductsByCategory.forEach((key,value) -> System.out.println("total: " + value.size()+ " " + key + " : " + value));
@@ -212,7 +280,7 @@ public class OnePizzaMain {
 
 }
 
-class Client implements Comparable<Client>{
+class Client implements Comparable<Client> {
 
     private Set<String> likes;
     private double likesSize;
@@ -275,7 +343,7 @@ class Client implements Comparable<Client>{
     @Override
     public int compareTo(Client o) {
 
-        return Comparators.OP_AND_EFF.compare(this,o);
+        return Comparators.OP_AND_EFF.compare(this, o);
     }
 
     public static class Comparators {
@@ -291,6 +359,6 @@ class Client implements Comparable<Client>{
                 " D:" + dislikesSize +
                 " E:" + efficient +
                 " O:" + opinionSize +
-                '}'+"\n";
+                '}' + "\n";
     }
 }
