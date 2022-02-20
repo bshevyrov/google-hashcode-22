@@ -16,15 +16,16 @@ public class OnePizzaMain {
     private static String[] some(List<Client> clients) {
 
         int count = 0;
-        Collections.sort(clients, Client.Comparators.EFFICIENT.reversed());
+//        Collections.sort(clients, Client.Comparators.EFFICIENT.reversed());
+        clients.sort(Client.Comparators.OP_SIZE);
 
-        Set<String> likeProduct = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        Set<String> dislikeProduct = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        Set<String> likeProducts = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        Set<String> dislikeProducts = Collections.newSetFromMap(new ConcurrentHashMap<>());
         List<Client> removeList = new ArrayList<>();
         for (Client client : clients) {
             //if no dislike add product to product set
             if (client.getDislikesSize() == 0) {
-                likeProduct.addAll(client.getLikes());
+                likeProducts.addAll(client.getLikes());
                 removeList.add(client);
                 count++;
             }
@@ -34,36 +35,61 @@ public class OnePizzaMain {
         for (Client client : removeList) {
             clients.remove(client);
         }
-//        System.out.println("clients size after remove  ZERO D = " + clients.size());
-
-
-        //compare this client dislike with like product set
 
         for (Client client : clients) {
 
             for (String dislike : client.getDislikes()) {
-                boolean dislikeSomeFromProduct = false;
-                for (String s : likeProduct) {
+                boolean dislikeSomeFromLikeProductList = false;
+                for (String s : likeProducts) {
+                    //Сравниванием дислайки нового клиента со списком уже имежщихся лайк продуктов
+                    //Если Новый клиент не любит чтото уже из существующего - скипаем клиента
+                    //Тут ПОИГРАТЬСЯ С Сортировкой
                     if (StringUtils.equals(dislike, s)) {
-                        dislikeSomeFromProduct = true;
+                        dislikeSomeFromLikeProductList = true;
                         break;
-                    } else {
-                        continue;
                     }
                 }
-                if (dislikeSomeFromProduct) {
+                if (dislikeSomeFromLikeProductList) {
                     break;
+                    //
+
                 } else {
-                    count++;
-                    likeProduct.addAll(client.getLikes());
-                    //TODO добавить в дизлайк а потом сравнить
+                    Set<String> currentClientLikes = client.getLikes();
+                    Set<String> currentClientDislikes = client.getDislikes();
+                    boolean skip = false;
+
+                    //   - каждый новый клиент не должен не любить чтото из списка уже лайкнутых продуктов
+
+                    for (String currentClientDislike : currentClientDislikes) {
+                        if (likeProducts.contains(currentClientDislike)) {
+                            skip = true;
+                            break;
+                        }
+                    }
+                    if (!skip) {
+                        //   - каждый новый клиент не должен любить чтото из списка не любимых продуктов
+
+                        for (String currentClientLike : currentClientLikes) {
+                            if (dislikeProducts.contains(currentClientLike)) {
+                                skip = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!skip) {
+                        count++;
+                        likeProducts.addAll(client.getLikes());
+                        dislikeProducts.addAll(client.getDislikes());
+                    }
+
                 }
             }
 
         }
 
-        System.out.println("Total clients: "+ count);
-        System.out.println("likeProduct size= " + likeProduct.size());
+        System.out.println("Total clients: " + count);
+        System.out.println("likeProducts size= " + likeProducts.size());
         return new String[0];
     }
 
@@ -97,12 +123,10 @@ public class OnePizzaMain {
             }
             client.setOpinionSize(client.getLikesSize() + client.getDislikesSize());
             clients.add(client);
+//TODO ТУТ СТАТИСТИКА ПО КЛИЕНТАМ
 //            System.out.println("L:"+client.getLikesSize()+" D:" + client.getDislikesSize() +
 //                    " E:" + client.getEfficient() + " O:" + client.getOpinionSize());
         }
-
-
-        //
         return clients;
     }
 
@@ -124,11 +148,6 @@ public class OnePizzaMain {
         return trimInPutString;
     }
 
-
-    ///TODOСамые дис
-    //TODO caмые лайк
-    // юежать по ефишенту и потом по списку масс дислайк
-
     public static void main(String[] args) {
         Path a = Paths.get("src/main/resources/a_an_example.in.txt");
         Path b = Paths.get("src/main/resources/b_basic.in.txt");
@@ -142,11 +161,20 @@ public class OnePizzaMain {
             List<Client> clientListD = fillClientsList(fileToSeparateStringList(d));
             List<Client> clientListE = fillClientsList(fileToSeparateStringList(e));
 
+            System.out.println("input a size:" + clientListA.size());
             some(clientListA);
-//            some(clientListB);
-//            some(clientListC);
-//            some(clientListD);
-//            some(clientListE);
+            System.out.println("~~~~~~~~~~~~~~");
+            System.out.println("input b size:" + clientListB.size());
+            some(clientListB);
+            System.out.println("~~~~~~~~~~~~~~");
+            System.out.println("input c size:" + clientListC.size());
+            some(clientListC);
+            System.out.println("~~~~~~~~~~~~~~");
+            System.out.println("input d size:" + clientListD.size());
+            some(clientListD);
+            System.out.println("~~~~~~~~~~~~~~");
+            System.out.println("input e size:" + clientListE.size());
+            some(clientListE);
 
 
 //       allProductsByCategory.forEach((key,value) -> System.out.println("total: " + value.size()+ " " + key + " : " + value));
